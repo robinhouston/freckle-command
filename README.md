@@ -22,7 +22,7 @@ present by default on current Linux and Mac distributions. Installation is
 as simple as downloading the script to your bin directory and marking it
 executable, e.g.
 
-    curl -o ~/bin/freck https://github.com/robinhouston/freckle-command/raw/master/freck
+    curl -Lo ~/bin/freck https://github.com/robinhouston/freckle-command/raw/master/freck
     chmod 755 ~/bin/freck
 
 ## Usage
