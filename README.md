@@ -28,6 +28,8 @@ If your project has standard tags that need to be applied to most of your tasks,
 you can specify a default set of tags that will be included unless overridden
 with the `-t` option.
 
+## Installation
+
 freck has no library dependencies. It requires only Python 2.6 or later,
 present by default on current Linux and Mac distributions. Installation is
 as simple as downloading the script to your bin directory and marking it
