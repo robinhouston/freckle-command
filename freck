@@ -1,0 +1,243 @@
+#!/usr/bin/python
+# -*- encoding: utf-8 -*-
+
+import logging
+import optparse
+import os
+import re
+import sys
+import urllib
+import urllib2
+
+CONFIG = [
+    # name, description, is_required
+    ("subdomain", "the subdomain associated with your Freckle account, e.g. mysociety", True),
+    ("user", "your login name or email address", True),
+    ("token", "your API token. You can find this in the API tab of the “settings & tools” box on the website", True),
+    ("project", "your current project. You may leave this blank", False),
+]
+CONFIG_KEYS = set([ t[0] for t in CONFIG ])
+
+# Exit with an error message
+def fail(template, **values):
+    print >>sys.stderr, sys.argv[0] + ": " + template.format(**values)
+    sys.exit(1)
+
+# Check we have a new enough Python to run this script
+if sys.version_info < (2, 6):
+    fail("This script requires Python 2.6 or later")
+
+# Older pythons don’t include the json module, and we would prefer
+# to fail with a more informative error message so we load it after
+# we have checked the Python version.
+import json
+
+
+# A class that encapsulates the config file handling and API calls
+class Freckle(object):
+    def __init__(self):
+        self._load_config()
+        self.url_base = "https://{subdomain}.letsfreckle.com/api/".format(
+            subdomain=self.config["subdomain"])
+        self._load_projects()
+    
+    def _generate_config(self):
+        """Generate configuration file interactively, if we don’t have one yet.
+        """
+        self.config = {}
+        config_string = ""
+        for key, desc, is_required in CONFIG:
+            print "Enter " + desc + ":"
+            while True:
+                value = raw_input(key + ": ")
+                if not is_required or value: break
+            print
+        
+            self.config[key] = value
+            config_string += "{key}: {value}\n".format(key=key, value=value)
+    
+        with open(self.config_file, 'w') as f:
+            f.write(config_string)
+        
+        print "Your settings have been saved in {config_file}".format(
+            config_file=self.config_file)
+        print "You may change them at any time by editing this file."
+    
+    def _load_config(self):
+        """Load configuration file.
+        """
+        self.config_file = os.path.join(os.environ["HOME"], ".freckle")
+        if os.path.isfile(self.config_file):
+            self.just_generated_config = False
+        else:
+            self._generate_config()
+            self.just_generated_config = True
+            return
+        
+        self.config = {}
+        with open(self.config_file, 'r') as f:
+            line_number = 0
+            for line in f:
+                line_number += 1
+                
+                # Remove comments and leading/trailing whitespace
+                line = re.sub(r"#.*", "", line).strip()
+                if not line: continue
+                
+                mo = re.match(r"([^:]+):\s*(.*)", line)
+                if not mo:
+                    fail("Syntax error in ~/.freckle at line {line_number}: {line}",
+                        line_number=line_number, line=line)
+                key = mo.group(1)
+                value = mo.group(2)
+                
+                if key not in CONFIG_KEYS:
+                    fail("Unrecognised key '{key}' in ~/.freckle at line {line_number}",
+                        key=key, line_number=line_number)
+                self.config[key] = value
+    
+    def api(self, *path, **kwargs):
+        """Make a call to the API.
+        """
+        url = self.url_base + "/".join(path) + ".json"
+        json_data = None if "data" not in kwargs else json.dumps(kwargs["data"])
+        headers = {
+            "Content-Type": "application/json",
+            "X-FreckleToken": self.config["token"],
+        }
+        logging.debug("Requesting %s with payload %r", url, json_data)
+        r = urllib2.urlopen(urllib2.Request(url, json_data, headers))
+        
+        s = r.read()
+        if s.strip() == "": return None
+        return json.loads(s)
+    
+    def _load_projects(self):
+        """Load the list of projects.
+        """
+        self.projects = {}
+        for p in self.api("projects"):
+            project = p["project"]
+            self.projects[project["name"]] = project["id"]
+    
+    def proj(self, project_name):
+        if project_name is None:
+            project_name = self.config.get("project")
+            if not project_name:
+                fail("No project name specified, and no default")
+        return project_name
+
+    def create_project(self, project_name):
+        """Create a new project with the specified name.
+        Returns True if a new project was created.
+        """
+        project_name = self.proj(project_name)
+        if project_name in self.projects: return False
+        self.api("projects", data={"project": {"name": project_name}})
+        return True
+    
+    def list_projects(self):
+        """Print a list of all projects.
+        """
+        print "Projects for {subdomain}.letsfreckle.com:".format(
+            subdomain=self.config["subdomain"])
+        
+        for project in self.projects:
+            if project == self.config.get("project"):
+                print " - " + project
+            else:
+                print " - " + project
+        print
+    
+    def create_entry(self, time, description=None, project_name=None, date=None):
+        """Create a new time-tracking entry.
+        """
+        project_name = self.proj(project_name)
+        if project_name not in self.projects:
+            if project_name == self.config["project"]:
+                # The default project does not exist
+                fail("Default project '{project_name}' does not exist.\nEdit ~/.freckle to specify one that does.",
+                    project_name=project_name)
+            
+            # Not the default project
+            fail("Project '{project_name}' does not exist.\nYou can create it by specifying --create, or list the existing projects by specifying --list-projects.",
+                project_name=project_name)
+        
+        data = {
+            "user": self.config["user"],
+            "minutes": time,
+            "project_id": self.projects[project_name],
+        }
+        if description: data["description"] = description
+        if date: data["date"] = date
+        
+        try:
+            self.api("entries", data={"entry": data})
+        except urllib2.HTTPError, e:
+            fail("Failed to create entry '{time}' for project {project_name}: {message}",
+                time=time, project_name=project_name, message=str(e))
+
+
+# Parse the command line
+parser = optparse.OptionParser(usage="%prog [options] time_spent")
+parser.add_option("-l", "--list-projects",
+                action="store_true",
+                help="list all available projects")
+
+parser.add_option("-t", "--tags",
+                action="store",
+                help="a list of tags and/or a description, comma-separated")
+parser.add_option("-p", "--project",
+                action="store",
+                help="the name of the project. If you have specified a default you can miss this out")
+parser.add_option("-d", "--date",
+                action="store",
+                help="the date to record this task against, yyyy-mm-dd")
+parser.add_option("-c", "--create",
+                action="store_true",
+                help="create the project if it does not exist")
+
+parser.add_option("-v", "--verbose",
+                action="store_true",
+                help="print detailed logging messages")
+parser.add_option("-s", "--silent",
+                action="store_true",
+                help="print no informational messages")
+
+(options, args) = parser.parse_args()
+if len(args) > 1:
+    parser.error("Unexpected argument: {arg}".format(arg=args[1]))
+
+# Configure logging
+if options.verbose and options.silent:
+    parser.error("Cannot specify both --verbose and --silent")
+log_level = logging.INFO
+if options.verbose: log_level = logging.DEBUG
+if options.silent:  log_level = logging.WARN
+logging.basicConfig(level=log_level, format=" * %(message)s")
+
+
+# The main program
+if options.list_projects:
+    if args:
+        parser.error("Unexpected argument following --list-projects: " + args[0])
+    Freckle().list_projects()
+    sys.exit(0)
+
+freckle = Freckle()
+done_something = False
+if options.create:
+    if freckle.create_project(options.project):
+        logging.info("Created new project: %s", options.project)
+        done_something = True
+    else:
+        logging.debug("The project %s already exists", options.project)
+
+if args:
+    time = args[0]
+    freckle.create_entry(time, options.tags, options.project, options.date)
+    logging.info("Recorded %s against project %s", time, freckle.proj(options.project))
+    done_something = True
+
+if not done_something and not freckle.just_generated_config:
+    logging.info("Nothing to do. Did you mean to specify a time? Use -h for help.")
