@@ -40,17 +40,15 @@ executable, e.g.
 
 ## Usage
 
-    Usage: freck [options] time_spent description/tags ...
-    
     Options:
       -h, --help            show this help message and exit
       -l, --list-projects   list all available projects
       -t TAGS, --tags=TAGS  additional tags, overriding the default if any
+      -d DATE, --date=DATE  the date this task was done, if not today: yyyy-mm-dd
+      -u USER, --user=USER  email address of user to record time for, if not you
       -p PROJECT, --project=PROJECT
                             the name of the project. If you have specified a
                             default you can miss this out
-      -d DATE, --date=DATE  the date you did this task, yyyy-mm-dd
       -c, --create          create the project if it does not exist
-      -u USER, --user=USER  email address of user to record time for, if not you
       -v, --verbose         print detailed logging messages
       -s, --silent          print no informational messages

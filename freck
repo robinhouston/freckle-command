@@ -230,18 +230,19 @@ parser.add_option("-l", "--list-projects",
 parser.add_option("-t", "--tags",
                 action="store",
                 help="additional tags, overriding the default if any")
-parser.add_option("-p", "--project",
-                action="store",
-                help="the name of the project. If you have specified a default you can miss this out")
 parser.add_option("-d", "--date",
                 action="store",
-                help="the date you did this task, yyyy-mm-dd")
-parser.add_option("-c", "--create",
-                action="store_true",
-                help="create the project if it does not exist")
+                help="the date this task was done, if not today: yyyy-mm-dd")
 parser.add_option("-u", "--user",
                 action="store",
                 help="email address of user to record time for, if not you")
+
+parser.add_option("-p", "--project",
+                action="store",
+                help="the name of the project. If you have specified a default you can miss this out")
+parser.add_option("-c", "--create",
+                action="store_true",
+                help="create the project if it does not exist")
 
 parser.add_option("-v", "--verbose",
                 action="store_true",
