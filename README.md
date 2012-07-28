@@ -1,5 +1,5 @@
 # freck
-## a friendly command-line interface for Freckle
+## A friendly command-line interface for Freckle
 
 freck is a command-line tool that makes it easy to enter data to [Freckle](http://letsfreckle.com).
 
