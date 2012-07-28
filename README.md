@@ -53,3 +53,8 @@ executable, e.g.
       -c, --create          create the project if it does not exist
       -v, --verbose         print detailed logging messages
       -s, --silent          print no informational messages
+
+## Feedback
+
+Please let me know if you find this useful, or if you have ideas for improvement.
+My email address is in my GitHub profile.
