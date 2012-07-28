@@ -11,6 +11,8 @@ import sys
 import urllib
 import urllib2
 
+VERSION = "1.0.0-beta.1"
+
 CONFIG_KEYS = set([ "subdomain", "user", "token", "project", "tags" ])
 
 # Exit with an error message
@@ -223,6 +225,10 @@ class Freckle(object):
 
 # Parse the command line
 parser = optparse.OptionParser(usage="%prog [options] time_spent description/tags ...")
+parser.add_option("", "--version",
+                action="store_true",
+                help="print version number and exit")
+
 parser.add_option("-l", "--list-projects",
                 action="store_true",
                 help="list all available projects")
@@ -252,6 +258,10 @@ parser.add_option("-s", "--silent",
                 help="print no informational messages")
 
 (options, args) = parser.parse_args()
+
+if options.version:
+    print VERSION
+    sys.exit(0)
 
 # Configure logging
 if options.verbose and options.silent:
