@@ -48,7 +48,6 @@ class Freckle(object):
         if '@' not in email:
             fail("That’s not an email address")
         
-        print "Type your password"
         password = getpass.getpass("password: ")
         
         self.url_base = "https://{subdomain}.letsfreckle.com/api/".format(subdomain=subdomain)
