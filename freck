@@ -144,7 +144,7 @@ class Freckle(object):
         
         for project in self.projects:
             if project == self.config.get("project"):
-                print " - " + project
+                print " * " + project
             else:
                 print " - " + project
         print
