@@ -67,7 +67,7 @@ class Freckle(object):
     def _load_config(self):
         """Load configuration file.
         """
-        self.config_file = os.path.join(os.environ["HOME"], ".freckle")
+        self.config_file = os.path.join(os.environ["HOME"], ".freck")
         if os.path.isfile(self.config_file):
             self.just_generated_config = False
         else:
@@ -87,13 +87,13 @@ class Freckle(object):
                 
                 mo = re.match(r"([^:]+):\s*(.*)", line)
                 if not mo:
-                    fail("Syntax error in ~/.freckle at line {line_number}: {line}",
+                    fail("Syntax error in ~/.freck at line {line_number}: {line}",
                         line_number=line_number, line=line)
                 key = mo.group(1)
                 value = mo.group(2)
                 
                 if key not in CONFIG_KEYS:
-                    fail("Unrecognised key '{key}' in ~/.freckle at line {line_number}",
+                    fail("Unrecognised key '{key}' in ~/.freck at line {line_number}",
                         key=key, line_number=line_number)
                 self.config[key] = value
     
@@ -157,7 +157,7 @@ class Freckle(object):
         if project_name not in self.projects:
             if project_name == self.config["project"]:
                 # The default project does not exist
-                fail("Default project '{project_name}' does not exist.\nEdit ~/.freckle to specify one that does.",
+                fail("Default project '{project_name}' does not exist.\nEdit ~/.freck to specify one that does.",
                     project_name=project_name)
             
             # Not the default project
