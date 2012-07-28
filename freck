@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # -*- encoding: utf-8 -*-
 
+import base64
+import getpass
 import logging
 import optparse
 import os
@@ -9,19 +11,12 @@ import sys
 import urllib
 import urllib2
 
-CONFIG = [
-    # name, description, is_required
-    ("subdomain", "the subdomain associated with your Freckle account, e.g. mysociety", True),
-    ("user", "your login name or email address", True),
-    ("token", "your API token. You can find this in the API tab of the “settings & tools” box on the website", True),
-    ("project", "your current project. You may leave this blank", False),
-    ("tags", "tags to include by default. You may leave this blank", False),
-]
-CONFIG_KEYS = set([ t[0] for t in CONFIG ])
+CONFIG_KEYS = set([ "subdomain", "user", "token", "project", "tags" ])
 
 # Exit with an error message
 def fail(template, **values):
-    print >>sys.stderr, sys.argv[0] + ": " + template.format(**values)
+    program_name = sys.argv[0].split('/')[-1]
+    print >>sys.stderr, program_name + ": " + template.format(**values)
     sys.exit(1)
 
 # Check we have a new enough Python to run this script
@@ -43,26 +38,51 @@ class Freckle(object):
         self._load_projects()
     
     def _generate_config(self):
-        """Generate configuration file interactively, if we don’t have one yet.
+        """Generate configuration file interactively; called if we don’t have one yet.
         """
-        self.config = {}
-        config_string = ""
-        for key, desc, is_required in CONFIG:
-            print "Enter " + desc + ":"
-            while True:
-                value = raw_input(key + ": ")
-                if not is_required or value: break
+        print "Type the subdomain associated with your Freckle account, e.g. mysociety"
+        subdomain = raw_input("subdomain: ")
+        
+        print "Type the email address you used to register with Freckle"
+        email = raw_input("email: ")
+        if '@' not in email:
+            fail("That’s not an email address")
+        
+        print "Type your password"
+        password = getpass.getpass("password: ")
+        
+        self.url_base = "https://{subdomain}.letsfreckle.com/api/".format(subdomain=subdomain)
+        try:
+            r = self.api("user", "api_auth_token", user=email, password=password)
+        except urllib2.HTTPError, e:
+            fail("Failed to connect to {subdomain}.letsfreckle.com\nCheck your details and try again.",
+                subdomain=subdomain)
+        token = r["user"]["api_auth_token"]
+        
+        self.config = {
+            "subdomain": subdomain,
+            "user": email,
+            "token": token,
+        }
+        
+        self._load_projects()
+        self.list_projects()
+        
+        print "Type your current project. You may leave this blank"
+        project = raw_input("project: ")
+        if project not in self.projects:
             print
+            print "WARNING: The project '{project}' does not exist.".format(project=project)
+            print "If this is a mistake, edit ~/.freck and correct it."
+            print "To create this project, use the --create option next time you run freck."
+            print
+        self.config["project"] = project
         
-            self.config[key] = value
-            config_string += "{key}: {value}\n".format(key=key, value=value)
-    
-        with open(self.config_file, 'w') as f:
-            f.write(config_string)
+        print "Type tags to include by default. You may leave this blank"
+        self.config["tags"] = raw_input("tags: ")
+        print
         
-        print "Your settings have been saved in {config_file}".format(
-            config_file=self.config_file)
-        print "You may change them at any time by editing this file."
+        self._save_config()
     
     def _load_config(self):
         """Load configuration file.
@@ -97,15 +117,29 @@ class Freckle(object):
                         key=key, line_number=line_number)
                 self.config[key] = value
     
+    def _save_config(self):
+        with open(self.config_file, 'w') as f:
+            f.write("".join([
+                "{key}: {value}\n".format(key=key, value=value)
+                for key, value in self.config.items()
+            ]))
+        
+        print "Your settings have been saved in {config_file}".format(
+            config_file=self.config_file)
+        print "You may change them at any time by editing this file."
+    
     def api(self, *path, **kwargs):
         """Make a call to the API.
         """
         url = self.url_base + "/".join(path) + ".json"
         json_data = None if "data" not in kwargs else json.dumps(kwargs["data"])
-        headers = {
-            "Content-Type": "application/json",
-            "X-FreckleToken": self.config["token"],
-        }
+        headers = { "Content-Type": "application/json" }
+        if "user" in kwargs:
+            headers["Authorization"] = "Basic " + base64.b64encode(
+                kwargs["user"] + ":" + kwargs["password"])
+        else:
+            headers["X-FreckleToken"] = self.config["token"]
+        
         logging.debug("Requesting %s with payload %r", url, json_data)
         r = urllib2.urlopen(urllib2.Request(url, json_data, headers))
         
@@ -116,6 +150,10 @@ class Freckle(object):
     def _load_projects(self):
         """Load the list of projects.
         """
+        if hasattr(self, "projects"):
+            # Projects are already loaded
+            return
+        
         self.projects = {}
         for p in self.api("projects"):
             project = p["project"]
