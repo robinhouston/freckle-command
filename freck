@@ -182,7 +182,7 @@ class Freckle(object):
         print "Projects for {subdomain}.letsfreckle.com:".format(
             subdomain=self.config["subdomain"])
         
-        for project in self.projects:
+        for project in sorted(self.projects.iterkeys()):
             if project == self.config.get("project"):
                 print "* " + project
             else:
