@@ -184,9 +184,9 @@ class Freckle(object):
         
         for project in self.projects:
             if project == self.config.get("project"):
-                print "* " + project
+                print "* " + project.encode("utf-8")
             else:
-                print "  " + project
+                print "  " + project.encode("utf-8")
         print
     
     def create_entry(self, time, description=None, tags=None, project_name=None, date=None, user=None):
