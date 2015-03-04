@@ -38,6 +38,7 @@ class Freckle(object):
         self.url_base = "https://{subdomain}.letsfreckle.com/api/".format(
             subdomain=self.config["subdomain"])
         self._load_projects()
+        self._load_tags()
     
     def _generate_config(self):
         """Generate configuration file interactively; called if we don’t have one yet.
@@ -188,6 +189,31 @@ class Freckle(object):
             else:
                 print "  " + project.encode("utf-8")
         print
+
+    def _load_tags(self):
+        """Load the list of tags.
+        """
+        if hasattr(self, "tags"):
+            # Tags are already loaded
+            return
+        
+        self.tags = {}
+        for t in self.api("tags"):
+            tag = t["tag"]
+            self.tags[tag["name"]] = tag["id"]
+
+    def list_tags(self):
+        """Print a list of all tags.
+        """
+        print "Tags for {subdomain}.letsfreckle.com:".format(
+            subdomain=self.config["subdomain"])
+        
+        for tag in self.tags:
+            if tag == self.config.get("tag"):
+                print "* " + tag.encode("utf-8")
+            else:
+                print "  " + tag.encode("utf-8")
+        print
     
     def create_entry(self, time, description=None, tags=None, project_name=None, date=None, user=None):
         """Create a new time-tracking entry.
@@ -233,6 +259,10 @@ parser.add_option("-l", "--list-projects",
                 action="store_true",
                 help="list all available projects")
 
+parser.add_option("--list-tags",
+                action="store_true",
+                help="list all available tags")
+
 parser.add_option("-t", "--tags",
                 action="store",
                 help="additional tags, overriding the default if any")
@@ -277,6 +307,12 @@ if options.list_projects:
     if args:
         parser.error("Unexpected argument following --list-projects: " + args[0])
     Freckle().list_projects()
+    sys.exit(0)
+
+if options.list_tags:
+    if args:
+        parser.error("Unexpected argument following --list-tags: " + args[0])
+    Freckle().list_tags()
     sys.exit(0)
 
 freckle = Freckle()
