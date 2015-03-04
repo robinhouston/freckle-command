@@ -259,7 +259,7 @@ parser.add_option("-l", "--list-projects",
                 action="store_true",
                 help="list all available projects")
 
-parser.add_option("--list-tags",
+parser.add_option("-L", "--list-tags",
                 action="store_true",
                 help="list all available tags")
 
