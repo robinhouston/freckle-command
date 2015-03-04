@@ -11,7 +11,7 @@ import sys
 import urllib
 import urllib2
 
-VERSION = "1.0.0-beta.1" # http://semver.org/
+VERSION = "1.1.0" # http://semver.org/
 
 CONFIG_KEYS = set([ "subdomain", "user", "token", "project", "tags" ])
 
