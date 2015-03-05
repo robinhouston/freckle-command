@@ -44,6 +44,7 @@ executable, e.g.
       -h, --help            show this help message and exit
       --version             print version number and exit
       -l, --list-projects   list all available projects
+      -L, --list-tags       list all available tags
       -t TAGS, --tags=TAGS  additional tags, overriding the default if any
       -d DATE, --date=DATE  the date this task was done, if not today: yyyy-mm-dd
       -u USER, --user=USER  email address of user to record time for, if not you
