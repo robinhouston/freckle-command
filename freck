@@ -218,7 +218,7 @@ class Freckle(object):
     def create_entry(self, time, description=None, tags=None, project_name=None, date=None, user=None):
         """Create a new time-tracking entry.
         """
-        project_name = self.proj(project_name)
+        project_name = self.proj(project_name.decode("utf-8"))
         if project_name not in self.projects:
             if project_name == self.config["project"]:
                 # The default project does not exist
