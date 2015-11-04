@@ -11,7 +11,7 @@ import sys
 import urllib
 import urllib2
 
-VERSION = "1.0.0-beta.1" # http://semver.org/
+VERSION = "1.1.0" # http://semver.org/
 
 CONFIG_KEYS = set([ "subdomain", "user", "token", "project", "tags" ])
 
@@ -218,7 +218,7 @@ class Freckle(object):
     def create_entry(self, time, description=None, tags=None, project_name=None, date=None, user=None):
         """Create a new time-tracking entry.
         """
-        project_name = self.proj(project_name)
+        project_name = self.proj(project_name.decode("utf-8"))
         if project_name not in self.projects:
             if project_name == self.config["project"]:
                 # The default project does not exist
@@ -259,7 +259,7 @@ parser.add_option("-l", "--list-projects",
                 action="store_true",
                 help="list all available projects")
 
-parser.add_option("--list-tags",
+parser.add_option("-L", "--list-tags",
                 action="store_true",
                 help="list all available tags")
 
